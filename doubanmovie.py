@@ -38,7 +38,7 @@ def TCappend(TC,titandcom):
         except:
             star='Nah'
         try:
-            comment=titandcom[i](class_=re.compile('comment'))[0].text
+            comment=titandcom[i](class_=re.compile('comment'))[0].text.replace('\n','-')
         except:
             comment='Nah'
         TC[title]=[date,star,comment]
@@ -77,6 +77,7 @@ def main():
     getWishList(doubanid=douid)
     print('开始下载电影评分与短评,存储为'+douid+'_Watched_List.csv')
     getSawList(doubanid=douid)
-    print('程序结束，有问题发:<jimsun6428@gmail.com>')
+    print('程序结束，有问题发:<jimsun6428@gmail.com> | https://github.com/JimSunJing/douban_clawer')
+	end=input('按任意键结束')
 
 main()
