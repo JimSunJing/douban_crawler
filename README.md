@@ -11,3 +11,4 @@ It is a very simple clawer in order to back-up one's DouBan account considering 
 
 * Douban Reading Clawer
 * Douban Music Clawer
+* Douban Movie label feature

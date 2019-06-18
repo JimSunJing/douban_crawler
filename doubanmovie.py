@@ -34,7 +34,7 @@ def TCappend(TC,titandcom):
         title=titandcom[i].em.text
         date=titandcom[i](class_=re.compile('date'))[0].text
         try:
-            star=titandcom[i](class_=re.compile('rat'))[0]['class'][0][6]+'/5'
+            star=titandcom[i](class_=re.compile('rat'))[0]['class'][0][6]
         except:
             star='Nah'
         try:
