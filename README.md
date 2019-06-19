@@ -24,7 +24,7 @@ It is a very simple clawer in order to back-up one's DouBan account considering 
 ## Warning
 
 * 豆瓣阅读爬虫其中包括了脚本自动打开chrome浏览器的操作，可能成功率会低？（我电脑是可以的）
-* `chromedriver.exe` 需要与你的chrome版本相适应，我的chromedriver版本对应Chrome75.0.3770.100。如果你的chrome版本不是75，请去https://blog.csdn.net/cz9025/article/details/70160273下载对应版本替换安装包内的chromedriver.exe
+* `chromedriver.exe` 需要与你的chrome版本相适应，我的chromedriver版本对应Chrome75.0.3770.100。如果你的chrome版本不是75，请去https://blog.csdn.net/cz9025/article/details/70160273 下载对应版本替换安装包内的chromedriver.exe
 
 ## About
 
