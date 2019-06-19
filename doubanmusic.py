@@ -15,7 +15,10 @@ def Musappend(Mdict,Items):
             comment=it(class_=re.compile('comm'))[0].get_text(strip=True).replace('\n','-')
         except:
             comment='Nah'
-        intro=it(class_='intro')[0].get_text(strip=True)
+        try:
+            intro=it(class_='intro')[0].get_text(strip=True)
+        except:
+            intro='Nah'
         Mdict[title]=[intro,date,stars,comment]
 
 def HeardList(doubanid):
@@ -57,7 +60,10 @@ def WMusappend(Mdict,Items):
             comment=it(class_=re.compile('comm'))[0].get_text(strip=True).replace('\n','-')
         except:
             comment='Nah'
-        intro=it(class_='intro')[0].get_text(strip=True)
+        try:
+            intro=it(class_='intro')[0].get_text(strip=True)
+        except:
+            intro='Nah'
         Mdict[title]=[intro,date,comment]
 
 
