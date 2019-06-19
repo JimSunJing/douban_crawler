@@ -2,8 +2,7 @@ import urllib.request
 from bs4 import BeautifulSoup
 import re
 import time
-import random
-from selenium import webdriver
+import requests
 
 headers = {'User-Agent':'Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9.1.6) Gecko/20091201 Firefox/3.5.6'}
 
@@ -91,15 +90,15 @@ def BRappend(BRdict,Items):
 def ReadBookList(doubanid):
     mainpage='https://book.douban.com/people/'+doubanid
     firstpage='https://book.douban.com/people/'+doubanid+'/collect?sort=time&start=0&filter=all&mode=list&tags_sort=count'
-    browser = webdriver.Chrome()
-    browser.get(mainpage)
-    browser.get(firstpage)
-    soup = BeautifulSoup(browser.page_source, "html.parser")
+    s=requests.Session()
+    res1=s.get(mainpage)
+    res2=s.get(firstpage)
+    soup=BeautifulSoup(res2.text,"html.parser")
     items=soup.find_all(class_=re.compile('item'),id=re.compile('li'))
     read_book={}
     BRappend(BRdict=read_book,Items=items)
     page=1
-    print(f"浏览器处理第{page}页")
+    print(f"第{page}页",res2.reason)
     while 1:
         time.sleep(2)
         try:
@@ -108,11 +107,11 @@ def ReadBookList(doubanid):
             print('已到最终页')
             break
         else:
-            browser.get(NextPage)
-            soup=BeautifulSoup(browser.page_source,"html.parser")
+            res=s.get(NextPage)
+            soup=BeautifulSoup(res.text,"html.parser")
             items=soup.find_all(class_=re.compile('item'),id=re.compile('li'))
             page+=1
-            print(f"浏览器处理第{page}页")
+            print(f"第{page}页",res.reason)
             BRappend(BRdict=read_book,Items=items)
     fw=open(doubanid+'_READ_List.csv','w',encoding='utf-8_sig')
     fw.write('书名,作者,译者,出版社,评分,日期,短评\n')
@@ -125,9 +124,7 @@ def ReadBookList(doubanid):
 
 
 def main():
-    print('注意：本脚本将会使用自动打开chrome浏览器的方法获取豆瓣阅读已读list')
-    print('''你的电脑应该需要装一个chrome，
-第一次运行时可能会弹出防火墙提示导致失败，请选择信任再次运行该脚本''')
+    print('注意：本脚本将会爬取已读list')
     choice=input('请确定你要运行此脚本(yes/no):')
     if choice=='yes':
         douid=input('请输入想备份的豆瓣id：')
