@@ -17,12 +17,15 @@ def BWappend(BWdict,Items):
             translater='/'.join(intro[1:-3])
             BWdict[title]=[author,translater,publisher]
         except:
-            title=Items[i](href=re.compile('subject'))[0].get_text(strip=True)
-            intro=Items[i](class_='intro')[0].get_text(strip=True).split(';')
-            author=intro[0]
-            publisher=intro[-1]
-            translater='/'.join(intro[1:-1])
-            BWdict[title]=[author,translater,publisher]
+            try:
+                title=Items[i](href=re.compile('subject'))[0].get_text(strip=True)
+                intro=Items[i](class_='intro')[0].get_text(strip=True).split(';')
+                author=intro[0]
+                publisher=intro[-1]
+                translater='/'.join(intro[1:-1])
+                BWdict[title]=[author,translater,publisher]
+            except:
+                BWdict[title]=['格式过于诡异','nah','nah']
 
 def bookwish(doubanid):
     firstpage='https://book.douban.com/people/'+doubanid+'/wish?sort=time&start=0&filter=all&mode=list&tags_sort=count'
@@ -65,10 +68,16 @@ def BRappend(BRdict,Items):
             publisher=intro[-3]
             translater='/'.join(intro[1:-3])
         except:
-            intro=Items[i](class_=re.compile('intro'))[0].get_text(strip=True).replace(';','/').split('/')
-            author=intro[0]
-            publisher=intro[-1]
-            translater='/'.join(intro[1:-1])
+            try:
+                intro=Items[i](class_=re.compile('intro'))[0].get_text(strip=True).replace(';','/').split('/')
+                author=intro[0]
+                publisher=intro[-1]
+                translater='/'.join(intro[1:-1])
+            except:
+                intro='格式过于诡异'
+                author='nah'
+                publisher='nah'
+                translater='nah'
         try:
             comment=Items[i](class_=re.compile('comm'))[0].get_text(strip=True).replace('\n','-')
         except:
