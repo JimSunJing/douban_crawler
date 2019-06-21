@@ -13,10 +13,10 @@ It is a very simple clawer in order to back-up one's DouBan account considering 
 * DouBan Movie Back-up
 * DouBan Reading Back-up
 * DouBan Music Back-up
+* DouBan Broadcast clawer
 
 ## Coming Up
 
-* DouBan Broadcast clawer
 * Movie label feature
 * Music label feature
 * Book label feature
