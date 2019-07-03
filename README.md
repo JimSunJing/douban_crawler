@@ -14,6 +14,8 @@ It is a very simple clawer in order to back-up one's DouBan account considering 
 * DouBan Reading Back-up
 * DouBan Music Back-up
 * DouBan Broadcast clawer
+* DouBan Diary Back-up
+* Douban Critique Back-up
 
 ## Coming Up
 
@@ -28,5 +30,5 @@ It is a very simple clawer in order to back-up one's DouBan account considering 
 
 ## About
 
-* 离考试周还有2周哦，可能由于要复习所以更新会很慢。。。
+* 还有一周就考完啦！Fighting!
 * 立志学机器学习的地铁工结果做了一个py爬虫（？）
