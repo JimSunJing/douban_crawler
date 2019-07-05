@@ -101,23 +101,7 @@ def main():
     print('hello，这是一个备份豆瓣广播的程序。\n需要你自己的cookie用来爬取广播。')
     choice=input('该过程有风险，请确定你要开始备份(yes/no)：')
     if choice=='yes':
-        print('检测默认cookie能不能用.')
-        try:
-            defalutcook=getCookie(rawji)
-            s0=requests.Session()
-            url='https://www.douban.com/people/ahbei/statuses?p=2'
-            res0=s0.get(url,headers=headers,cookies=defalutcook)
-            soup0=BeautifulSoup(res0.text,"html.parser")
-            items=soup0.find_all(class_=re.compile('status-item'))
-            if res0.status_code == 200:
-                print('默认cookie可用！')
-                user_raw=rawji
-            else:
-                print('默认cookie无效，需要你的cookie')
-                user_raw=input('请输入你的cookie(最后不要带空格)：')
-        except:
-            print('默认cookie无效，需要你的cookie')
-            user_raw=input('请输入你的cookie(最后不要带空格)：')
+        user_raw=input('请输入你的cookie(最后不要带空格)：')
         doubanid=input('请输入你的豆瓣id：')
         begin=eval(input('请输入你开始备份的页码(比如1)：'))
         endpage=eval(input('请输入你结束备份的页码：'))
