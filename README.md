@@ -15,20 +15,16 @@ It is a very simple clawer in order to back-up one's DouBan account considering 
 * DouBan Music Back-up
 * DouBan Broadcast clawer
 * DouBan Diary Back-up
-* Douban Critique Back-up
+* DouBan Critique Back-up
+* Movie label feature
+* Book label feature
 
 ## Coming Up
 
-* Movie label feature
-* Music label feature
-* Book label feature
-
-## Warning
-
-* 豆瓣阅读爬虫已经换成了requests.
+* DouBan Dou-List back-up
 
 
 ## About
 
-* 还有一周就考完啦！Fighting!
+* 有想法做一个独立的豆瓣书影音推荐系统，有兴趣一起做的可以联系我。
 * 立志学机器学习的地铁工结果做了一个py爬虫（？）
