@@ -1,11 +1,11 @@
-# Douban Clawer
+# Douban Crawler
 
 
 ## What is it?
 
-It is a very simple clawer in order to back-up one's DouBan account considering douban accounts might be blocked without any notification in Douban.
+  It is a very simple crawler in order to back-up one's DouBan account considering douban accounts might be blocked without any notification in Douban.
 
-为了防止被豆瓣未告知便封禁账号，写了这个简单的爬虫脚本。
+  为了防止被豆瓣未告知便封禁账号，写了这个简单的爬虫脚本。
 
 
 ## Function
