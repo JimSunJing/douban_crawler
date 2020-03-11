@@ -1,7 +1,9 @@
-import urllib.request
 from bs4 import BeautifulSoup
 import re
 import time
+import requests
+
+headers0 = {'User-Agent':"Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/62.0.3202.62 Safari/537.36"}
 
 def Musappend(Mdict,Items):
     for it in Items:
@@ -23,8 +25,10 @@ def Musappend(Mdict,Items):
 
 def HeardList(doubanid):
     firstpage='https://music.douban.com/people/'+doubanid+'/collect?sort=time&start=0&filter=all&mode=list&tags_sort=count'
-    request=urllib.request.urlopen(url=firstpage)
-    soup=BeautifulSoup(request.read())
+    sess = requests.Session()
+    sess.headers.update(headers0)
+    request=sess.get(firstpage)
+    soup=BeautifulSoup(request.text,'html.parser')
     items=soup.find_all(class_=re.compile('item'),id=re.compile('li'))
     heard_dic={}
     Musappend(Mdict=heard_dic,Items=items)
@@ -38,8 +42,8 @@ def HeardList(doubanid):
             print('已到最终页')
             break
         else:
-            request=urllib.request.urlopen(url=NextPage)
-            soup=BeautifulSoup(request.read())
+            request=sess.get(NextPage)
+            soup=BeautifulSoup(request.text,'html.parser')
             items=soup.find_all(class_=re.compile('item'),id=re.compile('li'))
             Musappend(Mdict=heard_dic,Items=items)
             page+=1
@@ -69,8 +73,10 @@ def WMusappend(Mdict,Items):
 
 def WHeardList(doubanid):
     firstpage='https://music.douban.com/people/'+doubanid+'/wish?sort=time&start=0&filter=all&mode=list&tags_sort=count'
-    request=urllib.request.urlopen(url=firstpage)
-    soup=BeautifulSoup(request.read())
+    sess = requests.Session()
+    sess.headers.update(headers0)
+    request=sess.get(firstpage)
+    soup=BeautifulSoup(request.text,'html.parser')
     items=soup.find_all(class_=re.compile('item'),id=re.compile('li'))
     whear_dic={}
     WMusappend(Mdict=whear_dic,Items=items)
@@ -84,8 +90,8 @@ def WHeardList(doubanid):
             print('已到最终页')
             break
         else:
-            request=urllib.request.urlopen(url=NextPage)
-            soup=BeautifulSoup(request.read())
+            request=sess.get(NextPage)
+            soup=BeautifulSoup(request.text,'html.parser')
             items=soup.find_all(class_=re.compile('item'),id=re.compile('li'))
             Musappend(Mdict=whear_dic,Items=items)
             page+=1
@@ -110,7 +116,7 @@ def main():
         WHeardList(doubanid=id)
         print('备份已存在该exe所在目录下（如果没出错的话）')
         print('问题反馈：jimsun6428@gmail.com | https://github.com/JimSunJing/douban_clawer')
-        end=input('按任意键退出')
+        input('按任意键退出')
     else:
         print('bye')
 
