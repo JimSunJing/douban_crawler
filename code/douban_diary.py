@@ -3,10 +3,21 @@ import re
 from bs4 import BeautifulSoup
 import time
 
+user_agent_list = ["Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/67.0.3396.99 Safari/537.36",
+                "Mozilla/5.0 (Windows NT 10.0; …) Gecko/20100101 Firefox/61.0",
+                "Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/64.0.3282.186 Safari/537.36",
+                "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/62.0.3202.62 Safari/537.36",
+                "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/45.0.2454.101 Safari/537.36",
+                "Mozilla/5.0 (Macintosh; U; PPC Mac OS X 10.5; en-US; rv:1.9.2.15) Gecko/20110303 Firefox/3.6.15",
+                ]
+
+headers0 = {'User-Agent':user_agent_list[3]}
+
 class diary:
     def __init__(self,doubanid,cookie=None):
         self.id=doubanid
         self.s=requests.Session()
+        self.s.headers.update(headers0)
         self.NUs=[]
         self.NRs=[]
     
@@ -40,7 +51,7 @@ class diary:
         print(self.NUs)
         print('开始访问每个日记...')
         for i in range(len(self.NUs)):
-            if i%50==0:
+            if (i+1)%50==0:
                 print('已经爬了50个日记，停2分钟')
                 time.sleep(120)
             time.sleep(1.5)
@@ -133,6 +144,6 @@ def main():
                 print('出错')
         print('程序结束，文件存在该exe目录中')
     print('问题反馈：jimsun6428@gmail.com | https://github.com/JimSunJing/douban_clawer')
-    over=input('按任意键退出')
+    input('按任意键退出')
 
 main()

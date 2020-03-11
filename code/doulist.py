@@ -3,7 +3,7 @@ import re
 from bs4 import BeautifulSoup
 from time import sleep,perf_counter
 from random import uniform,choice
-from os import mkdir,getcwd
+from os import mkdir,getcwd,path
 user_agent_list = ["Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/67.0.3396.99 Safari/537.36",
                 "Mozilla/5.0 (Windows NT 10.0; …) Gecko/20100101 Firefox/61.0",
                 "Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/64.0.3282.186 Safari/537.36",
@@ -268,12 +268,14 @@ def main():
             clawer.skip_douxi=True
         clawer.get_urls()
         for item in clawer.notes:
+            if path.exists(item[0]+'.html'):
+                continue
             sleep(2)
             Note(clawer.s,item[0],item[1]).claw()
         clawer.switch_headers()
-        for item in clawer.album:
-            sleep(2)
-            Album(clawer.s,item[0],item[1]).claw()
+        #for item in clawer.album:
+            #sleep(2)
+            #Album(clawer.s,item[0],item[1]).claw()
         clawer.switch_headers()
         for item in clawer.boardcast:
             sleep(2)
@@ -288,6 +290,7 @@ def main():
             DG(clawer.s,item[0],item[1]).claw()
     elif ch0=='0':
         S=requests.Session()
+        S.headers.update({'User-Agent':choice(user_agent_list)})
         aid=input('请输入相册id：')
         aurl='https://www.douban.com/photos/album/'+aid
         r=S.get(aurl)
