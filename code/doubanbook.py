@@ -4,7 +4,7 @@ import re
 import time
 import requests
 
-headers = {'User-Agent':'Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9.1.6) Gecko/20091201 Firefox/3.5.6'}
+headers0 = {'User-Agent':"Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/62.0.3202.62 Safari/537.36"}
 
 def BWappend(BWdict,Items):
     for i in range(len(Items)):
@@ -28,8 +28,10 @@ def BWappend(BWdict,Items):
 
 def bookwish(doubanid):
     firstpage='https://book.douban.com/people/'+doubanid+'/wish?sort=time&start=0&filter=all&mode=list&tags_sort=count'
-    request=urllib.request.urlopen(url=firstpage)
-    soup=BeautifulSoup(request.read())
+    sess = requests.Session()
+    sess.headers.update(headers0)
+    request=sess.get(firstpage)
+    soup=BeautifulSoup(request.text,'html.parser')
     page=1
     print(f'第{page}页',request.reason)
     bookwishdict={}
@@ -42,9 +44,8 @@ def bookwish(doubanid):
             print('已到最终页')
             break
         else:
-            response=urllib.request.Request(url=Nextpage,headers=headers)
-            request=urllib.request.urlopen(response)
-            soup=BeautifulSoup(request.read())
+            request=sess.get(Nextpage)
+            soup=BeautifulSoup(request.text,'html.parser')
             page+=1
             print(f'第{page}页',request.reason)
             items2=soup.find_all(class_='item')
@@ -91,7 +92,8 @@ def ReadBookList(doubanid):
     mainpage='https://book.douban.com/people/'+doubanid
     firstpage='https://book.douban.com/people/'+doubanid+'/collect?sort=time&start=0&filter=all&mode=list&tags_sort=count'
     s=requests.Session()
-    res1=s.get(mainpage)
+    s.headers.update(headers0)
+    s.get(mainpage)
     res2=s.get(firstpage)
     soup=BeautifulSoup(res2.text,"html.parser")
     items=soup.find_all(class_=re.compile('item'),id=re.compile('li'))
@@ -135,7 +137,7 @@ def main():
         ReadBookList(doubanid=douid)
         print('程序结束，文件已存在该exe目录中')
         print('问题反馈：jimsun6428@gmail.com | https://github.com/JimSunJing/douban_clawer')
-        end=input('按任意键退出')
+        input('按任意键退出')
     else:
         print('bye')
 

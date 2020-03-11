@@ -43,6 +43,7 @@ class Douban_Book:
         firstpage='https://book.douban.com/people/'+self.id+\
             '/wish?sort=time&start='+str((beg-1)*30)+'&filter=all&mode=list&tags_sort=count'
         req=self.s.get(firstpage)
+        print('url:',firstpage)
         print(f'第{page}页',req.status_code)
         soup=BeautifulSoup(req.text,'html.parser')
         #get book name and id
@@ -64,15 +65,17 @@ class Douban_Book:
             else:
                 req=self.s.get(NextPage)
                 page+=1
+                print('url:',NextPage)
                 print(f'第{page}页',req.status_code)
                 soup=BeautifulSoup(req.text,'html.parser')
-                wish==soup.find_all(class_='item')
+                wish=soup.find_all(class_='item')
                 for Item in wish:
                     name=Item(href=re.compile('subject'))[0].get_text(strip=True)
                     bid=Item.find(href=re.compile('subject')).get('href').split('/')[-2]
                     self.wish_dict[bid]={'书名':name,'作者':'','译者':'','原作名':'','出版社':'',\
                                          '出版年':'','页数':'','ISBN':'','评分':'','评分人数':''}
         #add feature for every book
+        print('一共有{}本书'.format(len(self.wish_dict.keys())))
         count=0
         st=perf_counter()
         total=len(self.wish_dict)
@@ -81,7 +84,7 @@ class Douban_Book:
             count+=1
             if count%50==0:
                 sleep(10)
-            sleep(uniform(1.5,4))
+            sleep(uniform(1,2))
             timebar(30,st,count/total)
             fail.append(self.get_feature(bid,'wish'))
         print('\n再次尝试打开失败的书籍页')
@@ -155,7 +158,7 @@ class Douban_Book:
         end=eval(input('请输入终止页码（建议一次爬取10页以下）：'))
         page=beg
         homepage='https://book.douban.com/people/'+self.id
-        tr=self.s.get(homepage)
+        self.s.get(homepage)
         Sfirstpage='https://book.douban.com/people/'+self.id+'/collect?&sort=time&start='+str((beg-1)*30)+'&filter=all&mode=list'
         req=self.s.get(Sfirstpage)
         soup=BeautifulSoup(req.text,'html.parser')
