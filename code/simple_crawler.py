@@ -47,7 +47,7 @@ def getList(doubanid,Type,subType,pageLimit=50,pageStart='0'):
             print(f'第{page}页',request.reason)
             soup=BeautifulSoup(request.text,'html.parser')
             dealWithSubjects(soup.find_all(class_='item-show'),List,subType)
-            sleep(1)
+            sleep(1.3)
     fileName = '_'.join([doubanid,prefix,suffix,str(ctime())])+'.csv'
     with open(fileName.replace(':','-').replace(' ','_'),'w',encoding='UTF-8') as f:
         fieldName = list(List[0].keys())
@@ -68,7 +68,8 @@ def dealWithSubjects(itemList,container,Type):
             dic = {'doubanId':doubanId,'title':title}
         else:
             try:
-                star = item.find('span')['class'][0][-3]
+                star = item.find_all('span')[-1]['class'][0][-3]
+                if not str.isdigit(star): star = ''
             except:
                 star = ''
             date = item.find(class_='date').get_text(strip=True)
