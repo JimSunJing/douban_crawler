@@ -16,6 +16,12 @@ def fn(name):
         .replace(':','-').replace('*','-').replace('"','“')\
         .replace('<','《').replace('>','》').replace('|','-').replace('?','？')
 
+def clean_abstract(text):
+    res = text.replace(',','，').replace('\n  ',',').replace(' ','').replace(',,',',')
+    if res[-1] == ',':
+        return res[:-1]
+    return res
+
 class Douban_List:
     def __init__(self,listid):
         self.id=listid
@@ -60,10 +66,21 @@ class Douban_List:
                             title='one_pic'
                 print(title)
                 if 'subject' in link:
-                    txt='\n          '+link+item.find(class_='abstract').get_text()
-                    open(self.list_name+'_subjects.txt',\
-                        'a',encoding='utf-8_sig').write\
-                        ('\n          '+title+txt+'\n\n———————————————————————')
+                    abstract = item.find(class_='abstract').get_text()
+                    # 获取评分
+                    try:
+                        rating = item.find(class_='rating_nums').get_text(strip=True)
+                    except:
+                        rating = 'nan'
+                    ## 文字保存条目
+                    txt='\n          '+link + abstract
+                    with open(self.list_name+'_subjects.txt','a',encoding='utf-8_sig') as f:
+                        f.write('\n          '+title+txt+'\n\n———————————————————————')
+                    ## csv保存条目
+                    row = '"' + title + '"' + ',' + link + ',' + rating + clean_abstract(abstract) + '\n'
+                    with open(self.list_name+'_subjects.csv','a',encoding='utf-8_sig') as f:
+                        f.write(row)
+
                 else:
                     self.match[n].append((fn(title),link))
                 return
