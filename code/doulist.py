@@ -11,6 +11,7 @@ user_agent_list = ["Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHT
                 ]
 headers0 = {'User-Agent':user_agent_list[3]}
 
+# file name
 def fn(name):
     return name.replace('\\','-').replace('/','-')\
         .replace(':','-').replace('*','-').replace('"','“')\
@@ -66,6 +67,9 @@ class Douban_List:
                             title='one_pic'
                 print(title)
                 if 'subject' in link:
+                    picList = item.find(class_='post').img.get('src').split('.')[:-1]
+                    picList.append('jpg')
+                    picUrl = '.'.join(picList)
                     abstract = item.find(class_='abstract').get_text()
                     # 获取评分
                     try:
@@ -77,7 +81,7 @@ class Douban_List:
                     with open(self.list_name+'_subjects.txt','a',encoding='utf-8_sig') as f:
                         f.write('\n          '+title+txt+'\n\n———————————————————————')
                     ## csv保存条目
-                    row = '"' + title + '"' + ',' + link + ',' + rating + clean_abstract(abstract) + '\n'
+                    row = '"' + title + '"' + ',' + link + ',' + picUrl + ',' + rating + clean_abstract(abstract) + '\n'
                     with open(self.list_name+'_subjects.csv','a',encoding='utf-8_sig') as f:
                         f.write(row)
 
