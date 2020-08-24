@@ -15,7 +15,8 @@ headers0 = {'User-Agent':user_agent_list[3]}
 def fn(name):
     return name.replace('\\','-').replace('/','-')\
         .replace(':','-').replace('*','-').replace('"','“')\
-        .replace('<','《').replace('>','》').replace('|','-').replace('?','？')
+        .replace('<','《').replace('>','》').replace('|','-')\
+        .replace('?','？').replace('\n','')
 
 def clean_abstract(text):
     res = text.replace(',','，').replace('\n  ',',').replace(' ','').replace(',,',',')
@@ -78,11 +79,11 @@ class Douban_List:
                         rating = 'nan'
                     ## 文字保存条目
                     txt='\n          '+link + abstract
-                    with open(self.list_name+'_subjects.txt','a',encoding='utf-8_sig') as f:
+                    with open(fn(self.list_name+'_subjects.txt'),'a',encoding='utf-8_sig') as f:
                         f.write('\n          '+title+txt+'\n\n———————————————————————')
                     ## csv保存条目
                     row = '"' + title + '"' + ',' + link + ',' + picUrl + ',' + rating + clean_abstract(abstract) + '\n'
-                    with open(self.list_name+'_subjects.csv','a',encoding='utf-8_sig') as f:
+                    with open(fn(self.list_name+'_subjects.csv'),'a',encoding='utf-8_sig') as f:
                         f.write(row)
 
                 else:
