@@ -1,26 +1,14 @@
 import requests
 from bs4 import BeautifulSoup
 import re
-from time import sleep,perf_counter
+from time import sleep
 from random import uniform,choice
-user_agent_list = ["Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/67.0.3396.99 Safari/537.36",
-                "Mozilla/5.0 (Windows NT 10.0; …) Gecko/20100101 Firefox/61.0",
-                "Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/64.0.3282.186 Safari/537.36",
-                "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/62.0.3202.62 Safari/537.36",
-                "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/45.0.2454.101 Safari/537.36",
-                "Mozilla/5.0 (Macintosh; U; PPC Mac OS X 10.5; en-US; rv:1.9.2.15) Gecko/20110303 Firefox/3.6.15",
-                ]
-headers0 = {'User-Agent':user_agent_list[3]}
+from doubanUtils import *
 
+headers0 = {'User-Agent':getAgent()}
 
-def noco(txt):
-    return txt.replace(',','、').replace('，','、').replace('\n','  ')
-
-def timebar(scale,start,p):
-    a='※'*round(p*scale)
-    b='.'*(scale-round(p*scale))
-    dur=(perf_counter()-start)/60
-    print("\r{:^3.0f}%[{}->{}]已运行{:.2f}分钟".format(p*100,a,b,dur),end=' ')
+subject_url_head = 'https://movie.douban.com/subject/'
+movie_ppl_head = 'https://movie.douban.com/people/'
 
 class Douban_Movie:
     def __init__(self,doubanid):
@@ -28,80 +16,83 @@ class Douban_Movie:
         #加上头部
         self.s.headers.update(headers0)
         self.id=doubanid
-        #wish dict format: {movieid:[影片名,上映日期,导演,编剧,主演,制片国家/地区,片长,评分,评分人数,标记日期]}
+        #wish dict format: {movieid:[影片名,上映日期,导演,编剧,主演,制片国家/地区,片长,评分,评分人数,标记日期,豆瓣链接]}
         self.wish_dict={}
         self.Keys=['影片名','上映日期','导演','编剧',\
-                    '主演','制片国家/地区','片长','评分','评分人数']
-        #saw dict format: {movieid:[影片名,上映日期,导演,编剧,主演,制片国家/地区,片长,评分,评分人数,用户评分,评论,标记日期]}
+                    '主演','制片国家/地区','片长','评分','评分人数','豆瓣链接']
+        #saw dict format: {movieid:[影片名,上映日期,导演,编剧,主演,制片国家/地区,片长,评分,评分人数,用户评分,评论,标记日期,豆瓣链接]}
         self.saw_dict={}
     
+    def get_soup(self,url):
+        req = self.s.get(url)
+        return BeautifulSoup(req.text,'html.parser'), req.status_code
+
+    def wish_get(self, wish):
+        date=wish(class_=re.compile('date'))[0].get_text(strip=True)
+        name=wish.find(href=re.compile('subject')).get_text(strip=True)
+        mid=wish.find(href=re.compile('subject')).get('href').split('/')[-2]
+        return date,name,mid
+
+    def wish_store(self,wish):
+        for i in range(len(wish)):
+            date,name,mid = self.wish_get(wish[i])
+            self.wish_dict[mid]=\
+                {'影片名':name,'豆瓣链接':subject_url_head+mid,\
+                '封面':' ','标记日期':date,'上映日期':' ','导演':' ','编剧':' ',\
+                '主演':' ','制片国家/地区':' ','片长':' ','豆瓣评分':' ','评分人数':' '}
+
     def Wish(self):
         print('\n开始爬取'+self.id+'的想看列表')
-        beg=eval(input('请输入你要爬取的起始页码（比如1）：'))
-        end=eval(input('请输入终止页码（建议一次爬取10页以下）：'))
+        beg, end = pageControl(10)
         page=beg
-        firstpage='https://movie.douban.com/people/'+self.id+'/wish?start='+str((beg-1)*30)+'&sort=time&rating=all&filter=all&mode=list'
-        req=self.s.get(firstpage)
-        soup=BeautifulSoup(req.text,'html.parser')
-        print(f'第{page}页',req.status_code)
-        #get movie name and id
-        wish=soup.find_all('a',href=re.compile("subject"))
-        for i in range(len(wish)):
-            name=wish[i].get_text(strip=True)
-            mid=wish[i].get('href').split('/')[-2]
-            self.wish_dict[mid]={'影片名':name,'上映日期':'','导演':'','编剧':'',\
-                                 '主演':'','制片国家/地区':'','片长':'','评分':'','评分人数':''}
+        firstpage= movie_ppl_head +\
+            self.id+'/wish?start='+str((beg-1)*30)+\
+            '&sort=time&rating=all&filter=all&mode=list'
+        soup,status=self.get_soup(firstpage)
+        print(f'第{page}页',status)
+
+        # get movie name and id
+        self.wish_store(soup.find_all(class_=['item']))
+        next_ = hasNextPage(soup)
+
         #get all wish list
-        while 1:
-            sleep(uniform(1.5,4))
-            if page==end:
-                break
-            try:
-                NextPage='https://movie.douban.com'+soup.find(class_='next').link.get('href')
-            except:
-                break
-            else:
-                req=self.s.get(NextPage)
-                soup=BeautifulSoup(req.text,'html.parser')
-                page+=1
-                print(f'第{page}页',req.status_code)
-                wish=soup.find_all('a',href=re.compile("subject"))
-                for i in range(len(wish)):
-                    name=wish[i].get_text(strip=True)
-                    mid=wish[i].get('href').split('/')[-2]
-                    self.wish_dict[mid]={'影片名':name,'上映日期':'','导演':'','编剧':'',\
-                                 '主演':'','制片国家/地区':'','片长':'','评分':'','评分人数':''}
+        while (next_!=False) and (page < end):
+            sleep(1.3)
+            NextPage='https://movie.douban.com'+next_
+            soup,status = self.get_soup(NextPage)
+            page+=1
+            print(f'第{page}页',status)
+            self.wish_store(soup.find_all(class_=['item']))
+            next_ = hasNextPage(soup)
+        
         #add feature for every movie
+        self.feature_helper(self.wish_dict)
+        return self.wish_dict
+    
+    def feature_helper(self, dic):
         count=0
         st=perf_counter()
-        total=len(self.wish_dict)
+        total=len(dic)
         fail=[]
-        for mid in self.wish_dict.keys():
+        for mid in dic.keys():
             count+=1
             if count%50==0:
                 sleep(15)
-            sleep(uniform(1.5,4))
+            sleep(uniform(1.5,3))
             timebar(30,st,count/total)
-            fail.append(self.get_feature(mid,'wish'))
+            fail.append(self.get_feature(mid,dic))
         print('\n再次尝试打开失败的电影页')
         sleep(10)
         for fmid in fail:
             if fmid!=None:
                 sleep(2)
                 print()
-                self.get_feature(fmid,'wish')
-        return self.wish_dict
+                self.get_feature(fmid,dic)
 
-            
-    def get_feature(self,mid,ty):
-        if ty=='wish':
-            dic=self.wish_dict
-        elif ty=='saw':
-            dic=self.saw_dict
-        head='https://movie.douban.com/subject/'
+    def get_feature(self,mid,dic):
         try:
-            req2=self.s.get(head+mid)
-            print('  '+dic[mid]['影片名']+'  爬虫状态：',req2.status_code,end=' ')
+            req2=self.s.get(subject_url_head+mid)
+            print(' '+dic[mid]['影片名']+' 状态：',req2.status_code,end=' ')
             if req2.status_code == requests.codes.ok:
                 soup2=BeautifulSoup(req2.text,'html.parser')
                 c=soup2.find(id='info').text
@@ -111,6 +102,7 @@ class Douban_Movie:
                         key,value=i.split(':',1)
                         if key in self.Keys:
                             dic[mid][key]=value.strip(' ')
+                dic[mid]['封面']=soup2.find('img').get('src')
                 try:
                     dic[mid]['评分']=soup2.find(property=re.compile('average')).text
                 except:
@@ -120,7 +112,7 @@ class Douban_Movie:
                 except:
                     dic[mid]['评分人数']='0'
         except:
-            print('\r打开电影页失败，失败的电影链接：'+head+mid)
+            print('\r打开电影页失败，失败的电影链接：'+subject_url_head+mid)
             self.switch_header()
             return mid
     
@@ -143,94 +135,60 @@ class Douban_Movie:
         mid=saw.find(href=re.compile('subject')).get('href').split('/')[-2]
         return date,star,comment,owntag,name,mid
     
-    def Saw(self):
-        print('\n开始爬取'+self.id+'的看过列表')
-        beg=eval(input('请输入你要爬取的起始页码（比如1）：'))
-        end=eval(input('请输入终止页码（建议一次爬取10页以下）：'))
-        page=beg
-        Sfirstpage='https://movie.douban.com/people/'+self.id+'/collect?start='+str((beg-1)*30)+'&sort=time&rating=all&filter=all&mode=list'
-        req=self.s.get(Sfirstpage)
-        soup=BeautifulSoup(req.text,'html.parser')
-        print(f'第{page}页',req.status_code)
-        #get movie name and id
-        saw=soup.find_all(class_=['item'])
+    def saw_store(self,saw):
         for i in range(len(saw)):
             date,star,comment,owntag,name,mid=self.saw_get(saw[i])
-            self.saw_dict[mid]={'影片名':name,'上映日期':'','导演':'','编剧':'',\
-                                '主演':'','制片国家/地区':'','片长':'','评分':'',\
-                                '评分人数':'','用户评分':star,'短评':comment,\
-                                '用户标签':owntag,'标记日期':date}
+            self.saw_dict[mid]=\
+                {'影片名':name,'豆瓣链接':subject_url_head+mid,\
+                '封面':'','用户评分':star,'短评':comment,\
+                '用户标签':owntag,'标记日期':date,\
+                '上映日期':'','导演':'','编剧':'',\
+                '主演':'','制片国家/地区':'','片长':'','豆瓣评分':'',\
+                '评分人数':''}
+
+    def Saw(self):
+        print('\n开始爬取'+self.id+'的看过列表')
+        beg, end = pageControl(10)
+        page=beg
+        Sfirstpage = movie_ppl_head+self.id+'/collect?start='+\
+            str((beg-1)*30)+'&sort=time&rating=all&filter=all&mode=list'
+        soup,status = self.get_soup(Sfirstpage)
+        print(f'第{page}页',status)
+
+        #get movie name and id
+        saw=soup.find_all(class_=['item'])
+        self.saw_store(saw)
+        next_ = hasNextPage(soup)
         #get all saw list
-        while 1:
-            sleep(uniform(1.5,4))
-            if page==end:
-                break
-            try:
-                NextPage='https://movie.douban.com'+soup.find(class_='next').link.get('href')
-            except:
-                break
-            else:
-                req=self.s.get(NextPage)
-                soup=BeautifulSoup(req.text,'html.parser')
-                page+=1
-                print(f'第{page}页',req.status_code)
-                saw=soup.find_all(class_=['item'])
-                for i in range(len(saw)):
-                    date,star,comment,owntag,name,mid=self.saw_get(saw[i])
-                    self.saw_dict[mid]={'影片名':name,'上映日期':'','导演':'','编剧':'',\
-                                        '主演':'','制片国家/地区':'','片长':'','评分':'',\
-                                        '评分人数':'','用户评分':star,'短评':comment,\
-                                        '用户标签':owntag,'标记日期':date}
+        while (next_ != False) and (page < end):
+            sleep(1.3)
+            NextPage='https://movie.douban.com' + next_
+            soup,status = self.get_soup(NextPage)
+            page+=1
+            print(f'第{page}页',status)
+            saw=soup.find_all(class_=['item'])
+            self.saw_store(saw)
+            next_ = hasNextPage(soup)
+        
         #add feature for every movie
-        count=0
-        st=perf_counter()
-        total=len(self.saw_dict)
-        fail=[]
-        for mid in self.saw_dict.keys():
-            count+=1
-            if count%50==0:
-                sleep(10)
-            sleep(uniform(1.5,4))
-            timebar(30,st,count/total)
-            fail.append(self.get_feature(mid,'saw'))
-        print('再次尝试打开失败的电影页')
-        sleep(10)
-        for fmid in fail:
-            if fmid!=None:
-                sleep(2)
-                print()
-                self.get_feature(fmid,'saw')
+        self.feature_helper(self.saw_dict)
         return self.saw_dict
     
+    def save_helper(self, dic, save_type):
+        fw=open(fn(self.id+'-'+getFormatTime()+save_type+'plus.csv'),\
+            'a',encoding='utf-8_sig')
+        fw.write(','.join(list(dic[list(dic.keys())[0]].keys()))+'\n')
+        for mid in dic.keys():
+            fw.write(','.join(list(map(noco, dic[mid].values())))+'\n')
+        fw.close()
     
     def save_as_csv(self,choice):
-        id=self.id
         if choice in ['a','c']:
             #保存想看
-            wish_dict=self.wish_dict
-            fw=open(id+'想看plus.csv','a',encoding='utf-8_sig')
-            fw.write('影片名,上映日期,导演,编剧,主演,制片国家/地区,片长,评分,评分人数\n')
-            for mid in wish_dict.keys():
-                fw.write(noco(wish_dict[mid]['影片名'])+','+wish_dict[mid]['上映日期']+\
-                        ','+noco(wish_dict[mid]['导演'])+','+noco(wish_dict[mid]['编剧'])+','+\
-                        noco(wish_dict[mid]['主演'])+','+noco(wish_dict[mid]['制片国家/地区'])+','+\
-                        wish_dict[mid]['片长']+','+wish_dict[mid]['评分']+','+\
-                        wish_dict[mid]['评分人数']+'\n')
-            fw.close()
+            self.save_helper(self.wish_dict,'想看')
         if choice in ['b','c']:
             #保存看过
-            saw_dict=self.saw_dict
-            fw2=open(id+'看过plus.csv','a',encoding='utf-8_sig')
-            fw2.write('影片名,上映日期,导演,编剧,主演,制片国家/地区,片长,评分,评分人数,用户评分,短评,用户标签,标记日期\n')
-            for mid in saw_dict.keys():
-                fw2.write(noco(saw_dict[mid]['影片名'])+','+saw_dict[mid]['上映日期']+\
-                        ','+noco(saw_dict[mid]['导演'])+','+noco(saw_dict[mid]['编剧'])+','+\
-                        noco(saw_dict[mid]['主演'])+','+noco(saw_dict[mid]['制片国家/地区'])+','+\
-                        saw_dict[mid]['片长']+','+saw_dict[mid]['评分']+','+\
-                        saw_dict[mid]['评分人数']+','+saw_dict[mid]['用户评分']+','+\
-                        noco(saw_dict[mid]['短评'])+','+noco(saw_dict[mid]['用户标签'])+','+\
-                        saw_dict[mid]['标记日期']+'\n')
-            fw2.close()
+            self.save_helper(self.saw_dict,'看过')
     
     def switch_header(self):
         headers0['User-Agent']=choice(user_agent_list)
@@ -264,7 +222,7 @@ def main():
         clawer.save_as_csv(choice=ans2)
     print('\n问题反馈：jimsun6428@gmail.com | https://github.com/JimSunJing/douban_clawer')
 
-
-main()
-sleep(10)
-over=input('按任意键退出')
+if __name__ == '__main__':
+    main()
+    sleep(10)
+    over=input('按任意键退出')

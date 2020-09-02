@@ -3,24 +3,9 @@ from bs4 import BeautifulSoup
 import re
 from time import sleep,perf_counter
 from random import uniform,choice
-user_agent_list = ["Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/67.0.3396.99 Safari/537.36",
-                "Mozilla/5.0 (Windows NT 10.0; …) Gecko/20100101 Firefox/61.0",
-                "Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/64.0.3282.186 Safari/537.36",
-                "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/62.0.3202.62 Safari/537.36",
-                "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/45.0.2454.101 Safari/537.36",
-                "Mozilla/5.0 (Macintosh; U; PPC Mac OS X 10.5; en-US; rv:1.9.2.15) Gecko/20110303 Firefox/3.6.15",
-                ]
-headers0 = {'User-Agent':user_agent_list[3]}
+from doubanUtils import *
 
-
-def noco(txt):
-    return txt.replace(',','、').replace('，','、').replace('\n','  ')
-
-def timebar(scale,start,p):
-    a='※'*round(p*scale)
-    b='.'*(scale-round(p*scale))
-    dur=(perf_counter()-start)/60
-    print("\r{:^3.0f}%[{}->{}]已运行{:.2f}分钟".format(p*100,a,b,dur),end=' ')
+headers0 = {'User-Agent':getAgent()}
 
 class Douban_Book:
     def __init__(self,doubanid):
@@ -34,82 +19,85 @@ class Douban_Book:
                     '出版社','出版年','页数','ISBN','评分','评分人数']
         #saw dict format: {bookid:[书名,作者,译者,出版社,出版年,页数,ISBN,评分,评分人数,用户评分,评论,标记日期]}
         self.saw_dict={}
+        self.head='https://book.douban.com/subject/'
+
+    def get_soup(self,url):
+        req = self.s.get(url)
+        return BeautifulSoup(req.text,'html.parser'), req.status_code
     
+    def wish_get(self,item):
+        date = item(class_=re.compile('date'))[0].get_text(strip=True)
+        name = item(href=re.compile('subject'))[0].get_text(strip=True)
+        url = item.find(href=re.compile('subject')).get('href')
+        bid = url.split('/')[-2]
+        return date,name,url,bid
+
+    def wish_store(self,wishes):
+        for item in wishes:
+            date,name,url,bid = self.wish_get(item)
+            self.wish_dict[bid]={'书名':name,'封面':'','豆瓣链接':url,\
+                '标记日期':date,'作者':'','译者':'','原作名':'','出版社':'',\
+                '出版年':'','页数':'','ISBN':'','评分':'','评分人数':''}
+
     def Wish(self):
+        # 豆瓣图书反爬机制
+        homepage='https://book.douban.com/people/'+self.id
+        self.s.get(homepage)
+        self.s.get(homepage+'wish')
+
         print('\n开始爬取'+self.id+'的想读列表')
-        beg=eval(input('请输入你要爬取的起始页码（比如1）：'))
-        end=eval(input('请输入终止页码（建议一次爬取10页以下）：'))
+        beg,end = pageControl(10)
         page=beg
         firstpage='https://book.douban.com/people/'+self.id+\
-            '/wish?sort=time&start='+str((beg-1)*30)+'&filter=all&mode=list&tags_sort=count'
-        req=self.s.get(firstpage)
-        print('url:',firstpage)
-        print(f'第{page}页',req.status_code)
-        soup=BeautifulSoup(req.text,'html.parser')
+            '/wish?sort=time&start='+str((beg-1)*30)\
+            +'&filter=all&mode=list&tags_sort=count'
+        soup, status = self.get_soup(firstpage)
+        print(f'第{page}页',status)
+
         #get book name and id
-        wish=soup.find_all(class_='item')
-        for Item in wish:
-            name=Item(href=re.compile('subject'))[0].get_text(strip=True)
-            bid=Item.find(href=re.compile('subject')).get('href').split('/')[-2]
-            self.wish_dict[bid]={'书名':name,'作者':'','译者':'','原作名':'','出版社':'',\
-                                 '出版年':'','页数':'','ISBN':'','评分':'','评分人数':''}
+        self.wish_store(soup.find_all(class_='item'))
+        next_ = hasNextPage(soup)
+
         #get all wish list
-        while 1:
-            sleep(uniform(1.5,4))
-            if page==end:
-                break
-            try:
-                NextPage='https://book.douban.com'+soup.find(class_='next').link.get('href')
-            except:
-                break
-            else:
-                req=self.s.get(NextPage)
-                page+=1
-                print('url:',NextPage)
-                print(f'第{page}页',req.status_code)
-                soup=BeautifulSoup(req.text,'html.parser')
-                wish=soup.find_all(class_='item')
-                for Item in wish:
-                    name=Item(href=re.compile('subject'))[0].get_text(strip=True)
-                    bid=Item.find(href=re.compile('subject')).get('href').split('/')[-2]
-                    self.wish_dict[bid]={'书名':name,'作者':'','译者':'','原作名':'','出版社':'',\
-                                         '出版年':'','页数':'','ISBN':'','评分':'','评分人数':''}
+        while (next_!=False) and (page < end):
+            NextPage = 'https://book.douban.com'+next
+            soup, status = self.get_soup(NextPage)
+            page += 1
+            print(f'第{page}页',status)
+            self.wish_store(soup.find_all(class_='item'))
+            next_ = hasNextPage(soup)
+
         #add feature for every book
-        print('一共有{}本书'.format(len(self.wish_dict.keys())))
+        self.feature_helper(self.wish_dict)
+        return self.wish_dict
+
+    def feature_helper(self, dic):
+        #add feature for every book
+        print('一共有{}本书'.format(len(dic.keys())))
         count=0
         st=perf_counter()
-        total=len(self.wish_dict)
+        total=len(dic)
         fail=[]
-        for bid in self.wish_dict.keys():
+        for bid in dic.keys():
             count+=1
             if count%50==0:
                 sleep(10)
             sleep(uniform(1,2))
             timebar(30,st,count/total)
-            fail.append(self.get_feature(bid,'wish'))
+            fail.append(self.get_feature(bid,dic))
         print('\n再次尝试打开失败的书籍页')
-        sleep(10)
+        # sleep(10)
         for fbid in fail:
             if fbid!=None:
                 sleep(2)
                 print()
-                self.get_feature(fbid,'wish')
-        return self.wish_dict
-
+                self.get_feature(fbid,dic)
             
-    def get_feature(self,bid,ty):
-        if ty=='wish':
-            dic=self.wish_dict
-        elif ty=='saw':
-            dic=self.saw_dict
-        head='https://book.douban.com/subject/'
+    def get_feature(self,bid,dic):
+        head=self.head
         try:
             req2=self.s.get(head+bid)
-            if req2.status_code!=requests.codes.ok:
-                print('\r打开书籍页失败，失败的书籍链接：'+head+bid)
-                self.switch_header()
-                return bid
-            print('  '+dic[bid]['书名'].center(20,':')+' 状态：',req2.status_code,end=' ')
+            print('  '+dic[bid]['书名']+' 状态：',req2.status_code,end=' ')
             if req2.status_code == requests.codes.ok:
                 soup2=BeautifulSoup(req2.text,'html.parser')
                 c=soup2.find(id='info').text.replace('\xa0','').replace('\n   ','')
@@ -120,6 +108,7 @@ class Douban_Book:
                         key,value=i.split(':',1)
                         if key in self.Keys:
                             dic[bid][key]=value
+                dic[mid]['封面']=soup2.find('img').get('src')
                 try:
                     dic[bid]['评分']=soup2.find(property=re.compile('average')).text.strip(' ')
                 except:
@@ -133,6 +122,14 @@ class Douban_Book:
             self.switch_header()
             return bid
     
+    def saw_store(self,saw):
+        for item in saw:
+            date,star,comment,owntag,name,bid=self.saw_get(item)
+            self.saw_dict[bid]={'书名':name,'封面':'','豆瓣链接':self.head+bid,\
+                '标记日期':date,'作者':'','译者':'','原作名':'','出版社':'',\
+                '出版年':'','页数':'','ISBN':'','评分':'','评分人数':'',\
+                '用户评分':star,'短评':comment,'用户标签':owntag}
+
     def saw_get(self,saw):
         date=saw(class_=re.compile('date'))[0].get_text(strip=True)
         try:
@@ -153,97 +150,73 @@ class Douban_Book:
         return date,star,comment,owntag,name,bid
     
     def Saw(self):
-        print('\n开始爬取'+self.id+'的读过列表')
-        beg=eval(input('请输入你要爬取的起始页码（比如1）：'))
-        end=eval(input('请输入终止页码（建议一次爬取10页以下）：'))
-        page=beg
+        # 豆瓣图书反爬机制
         homepage='https://book.douban.com/people/'+self.id
         self.s.get(homepage)
-        Sfirstpage='https://book.douban.com/people/'+self.id+'/collect?&sort=time&start='+str((beg-1)*30)+'&filter=all&mode=list'
-        req=self.s.get(Sfirstpage)
-        soup=BeautifulSoup(req.text,'html.parser')
-        print(f'第{page}页',req.status_code)
+
+        print('\n开始爬取'+self.id+'的读过列表')
+        beg, end = pageControl(10)
+        page=beg
+        
+        Sfirstpage='https://book.douban.com/people/'+self.id+\
+            '/collect?&sort=time&start='+str((beg-1)*30)+\
+            '&filter=all&mode=list'
+        soup, status = self.get_soup(Sfirstpage)
+        print(f'第{page}页',status)
+
         #get book name and id
-        saw=soup.find_all(class_=['item'])
-        for i in range(len(saw)):
-            date,star,comment,owntag,name,bid=self.saw_get(saw[i])
-            self.saw_dict[bid]={'书名':name,'作者':'','译者':'','原作名':'','出版社':'',\
-                                '出版年':'','页数':'','ISBN':'','评分':'','评分人数':'',\
-                                '用户评分':star,'短评':comment,'用户标签':owntag,'标记日期':date}
+        self.saw_store(soup.find_all(class_='item'))
+        next_ = hasNextPage(soup)
+
         #get all saw list
-        while 1:
-            sleep(uniform(1.5,4))
-            if page==end:
-                break
-            try:
-                NextPage='https://book.douban.com'+soup.find(class_='next').link.get('href')
-            except:
-                break
-            else:
-                req=self.s.get(NextPage)
-                soup=BeautifulSoup(req.text,'html.parser')
-                page+=1
-                print(f'第{page}页',req.status_code)
-                saw=soup.find_all(class_=['item'])
-                for i in range(len(saw)):
-                    date,star,comment,owntag,name,bid=self.saw_get(saw[i])
-                    self.saw_dict[bid]={'书名':name,'作者':'','译者':'','原作名':'','出版社':'',\
-                                        '出版年':'','页数':'','ISBN':'','评分':'','评分人数':'',\
-                                        '用户评分':star,'短评':comment,'用户标签':owntag,'标记日期':date}
+        while (next_ != False) and (page < end):
+            sleep(1.3)
+            NextPage='https://book.douban.com'+next_
+            soup, status = self.get_soup(NextPage)
+            page += 1
+            print(f'第{page}页',status)
+            self.saw_store(soup.find_all(class_='item'))
+            next_ = hasNextPage(soup)
+
         #add feature for every book
-        count=0
-        st=perf_counter()
-        total=len(self.saw_dict)
-        fail=[]
-        for bid in self.saw_dict.keys():
-            count+=1
-            if count%50==0:
-                sleep(10)
-            sleep(uniform(1.5,4))
-            timebar(30,st,count/total)
-            fail.append(self.get_feature(bid,'saw'))
-        print('\n再次尝试打开失败的书籍页')
-        sleep(10)
-        for fbid in fail:
-            if fbid!=None:
-                sleep(2)
-                print()
-                self.get_feature(fbid,'saw')
+        self.feature_helper(self.saw_dict)
+        
         return self.saw_dict
     
+    def save_helper(self, dic, save_type):
+        fw = open(fn(self.id+'-'+getFormatTime()+save_type+'plus.csv'),\
+            'a',endcoding='utf-8_sig')
+        fw.write(','.join(list(dic[list(dic.keys())[0]].keys()))+'\n')
+        for bid in dic.keys():
+            fw.write(','.join(list(map(noco, dic[bid].values())))+'\n')
+        fw.close()
     
     def save_as_csv(self,choice):
-        id=self.id
         if choice in ['a','c']:
-            #保存想读
-            wish_dict=self.wish_dict
-            fw=open(id+'想读plus.csv','a',encoding='utf-8_sig')
-            fw.write('书名,作者,译者,原作名,出版社,出版年,页数,ISBN,评分,评分人数\n')
-            for bid in wish_dict.keys():
-                fw.write(noco(wish_dict[bid]['书名'])+','+wish_dict[bid]['作者']+\
-                        ','+noco(wish_dict[bid]['译者'])+','+noco(wish_dict[bid]['原作名'])+','+\
-                        noco(wish_dict[bid]['出版社'])+','+noco(wish_dict[bid]['出版年'])+','+\
-                        wish_dict[bid]['页数']+','+wish_dict[bid]['ISBN']+','+\
-                        wish_dict[bid]['评分']+','+wish_dict[bid]['评分人数']+'\n')
-            fw.close()
+            self.save_helper(self.wish_dict, '想读')
         if choice in ['b','c']:
-            #保存读过
-            saw_dict=self.saw_dict
-            fw2=open(id+'读过plus.csv','a',encoding='utf-8_sig')
-            fw2.write('书名,作者,译者,原作名,出版社,出版年,页数,ISBN,评分,评分人数,用户评分,短评,用户标签,标记日期\n')
-            for bid in saw_dict.keys():
-                fw2.write(noco(saw_dict[bid]['书名'])+','+noco(saw_dict[bid]['作者'])+\
-                        ','+noco(saw_dict[bid]['译者'])+','+noco(saw_dict[bid]['原作名'])+','+\
-                        noco(saw_dict[bid]['出版社'])+','+noco(saw_dict[bid]['出版年'])+','+\
-                        saw_dict[bid]['页数']+','+saw_dict[bid]['ISBN']+','+\
-                        saw_dict[bid]['评分']+','+saw_dict[bid]['评分人数']+','+saw_dict[bid]['用户评分']+','+\
-                        noco(saw_dict[bid]['短评'])+','+noco(saw_dict[bid]['用户标签'])+\
-                        ','+saw_dict[bid]['标记日期']+'\n')
-            fw2.close()
+            self.save_helper(self.saw_dict, '读过')
     
     def switch_header(self):
         headers0['User-Agent']=choice(user_agent_list)
         self.s.headers.update(headers0)
+
+    def main(self):
+        print('''
+以下为选项
+    A：想读列表
+    B：读过列表
+    C：想读+读过''')
+        ans2=input('请输入你需要爬取的内容：')
+        ans2=ans2.lower()
+        if ans2=='a':
+            self.Wish()
+        elif ans2=='b':
+            self.Saw()
+        elif ans2=='c':
+            self.Wish()
+            self.Saw()
+        self.save_as_csv(choice=ans2)
 
 def main():
     print('嘿，据说你想要备份你的豆瓣书籍记录？')
@@ -256,24 +229,11 @@ def main():
     if ans1=='yes':
         Douid=input('请输入你的豆瓣id： ')
         clawer=Douban_Book(doubanid=Douid)
-        print('''
-以下为选项
-    A：想读列表
-    B：读过列表
-    C：想读+读过''')
-        ans2=input('请输入你需要爬取的内容：')
-        ans2=ans2.lower()
-        if ans2=='a':
-            clawer.Wish()
-        elif ans2=='b':
-            clawer.Saw()
-        elif ans2=='c':
-            clawer.Wish()
-            clawer.Saw()
-        clawer.save_as_csv(choice=ans2)
+        clawer.main()
     print('\n问题反馈：jimsun6428@gmail.com | https://github.com/JimSunJing/douban_clawer')
 
 
-main()
-sleep(10)
-over=input('按任意键退出')
+if __name__ == '__main__':
+    main()
+    sleep(10)
+    over=input('按任意键退出')

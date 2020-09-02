@@ -2,7 +2,7 @@ import requests
 import re
 from bs4 import BeautifulSoup
 from time import sleep
-import doubanUtils
+from doubanUtils import *
 
 user_agent_list = ["Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/67.0.3396.99 Safari/537.36",
                 "Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/64.0.3282.186 Safari/537.36",
@@ -11,11 +11,6 @@ user_agent_list = ["Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHT
                 ]
 headers0 = {'User-Agent':user_agent_list[3]}
 
-# file name
-def fn(name):
-    return name.replace('\\','-').replace('/','-')\
-        .replace(':','-').replace('*','-').replace('"','“')\
-        .replace('<','《').replace('>','》').replace('|','-').replace('?','？')
 
 
 class Celebreties_Crawler:

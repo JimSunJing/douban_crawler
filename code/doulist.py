@@ -4,19 +4,13 @@ from bs4 import BeautifulSoup
 from time import sleep,perf_counter
 from random import uniform,choice
 from os import mkdir,getcwd,path
+from doubanUtils import fn
 user_agent_list = ["Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/67.0.3396.99 Safari/537.36",
                 "Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/64.0.3282.186 Safari/537.36",
                 "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/62.0.3202.62 Safari/537.36",
                 "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/45.0.2454.101 Safari/537.36"
                 ]
 headers0 = {'User-Agent':user_agent_list[3]}
-
-# file name
-def fn(name):
-    return name.replace('\\','-').replace('/','-')\
-        .replace(':','-').replace('*','-').replace('"','“')\
-        .replace('<','《').replace('>','》').replace('|','-')\
-        .replace('?','？').replace('\n','')
 
 def clean_abstract(text):
     res = text.replace(',','，').replace('\n  ',',').replace(' ','').replace(',,',',')
@@ -123,7 +117,6 @@ class Douban_List:
     
     def switch_headers(self):
         self.s.headers.update({'User-Agent':choice(user_agent_list)})
-
 
 class Note:
     def __init__(self,S,title,url):
