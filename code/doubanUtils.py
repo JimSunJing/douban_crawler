@@ -1,7 +1,7 @@
 import requests
 import re
 from bs4 import BeautifulSoup
-from time import localtime,strftime,perf_counter
+from time import localtime,strftime,perf_counter,strptime
 
 user_agent_list = ["Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/67.0.3396.99 Safari/537.36",
                 "Mozilla/5.0 (Windows NT 10.0; …) Gecko/20100101 Firefox/61.0",
@@ -53,4 +53,7 @@ def noco(txt):
 
 
 def getFormatTime():
-    return strftime("%Y-%m-%d %H:%M:%S", localtime())
+    return strftime("%Y-%m-%d %H-%M-%S", localtime())
+
+def string2Time(s):
+    return strptime(s, '%Y-%m-%d %H-%M-%S')
