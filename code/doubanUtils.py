@@ -1,5 +1,6 @@
 import requests
-import re
+import csv, os, os.path, re
+from functools import reduce
 from bs4 import BeautifulSoup
 from time import localtime,strftime,perf_counter,strptime
 
@@ -57,3 +58,61 @@ def getFormatTime():
 
 def string2Time(s):
     return strptime(s, '%Y-%m-%d %H-%M-%S')
+
+def fileTimeCompare(fn1, fn2):
+    fn1 = fn1.replace(".csv","").split('-',1)[1][:-6]
+    fn2 = fn2.replace(".csv","").split('-',1)[1][:-6]
+    return string2Time(fn1) > string2Time(fn2) 
+
+def getLastBackUpItem(douId,Type):
+    # 获取上次文件
+    matchFiles = []
+    # 文件名
+    fnMatch = r"iiid-\d{4}-\d{2}-\d{2} \d{2}-\d{2}-\d{2}tttypeplus.csv"\
+        .replace('iiid',douId).replace('tttype',Type)
+    for _, _, files in os.walk("."):
+        for file in files:
+            # print(file)
+            if re.match(fnMatch,file):
+                matchFiles.append(file)
+    ## 得到最新的电影名
+    if len(matchFiles) != 0:
+        latest = reduce(lambda x,y: x if fileTimeCompare(x,y) else y,\
+            matchFiles)
+        with open(latest, 'r', encoding='utf-8_sig') as f:
+            reader = csv.DictReader(f)
+            # 获取第一行电影的id
+            try:
+                row = reader.__next__()
+                return row['subjectId']
+            except:
+                return None
+    else: 
+        return None 
+
+def getCookie(raw_cookies):
+    cookies={}
+    for line in raw_cookies.split(';'):
+        key,value=line.split('=',1) 
+        cookies[key]=value
+    return cookies   
+
+def getYear(raw):
+    yearRex = r'([1|2][9|0]\d{2})'
+    res = re.match(yearRex,raw)
+    try:
+        return res.group(1)
+    except:
+        return ''
+
+def getShortComments(comments):
+    res = ''
+    for com in comments:
+        # 先得到评价用户名
+        user = com.find(class_="comment-info").get_text(strip=True).replace('\xa0','').replace('\n','')
+        res += user
+        res += '：'
+        short = com.find(class_="short").get_text(strip=True).replace('\xa0','').replace('\n','')
+        res += short
+        res += '；  |  '
+    return res.replace("看过"," ")

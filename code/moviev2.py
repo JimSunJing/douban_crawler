@@ -1,10 +1,8 @@
 import requests, traceback
-import csv, os, os.path, re
 from bs4 import BeautifulSoup
 from time import sleep
 from random import uniform,choice
 from doubanUtils import *
-from functools import reduce
 
 headers0 = {'User-Agent':getAgent()}
 
@@ -19,12 +17,16 @@ class Douban_Movie:
         self.id=doubanid
         #wish dict format: {movieid:[电影名,上映日期,导演,编剧,主演,制片国家/地区,片长,评分,评分人数,标记日期,豆瓣链接]}
         self.wish_dict={}
-        self.itemKeys=['subjectId','电影名','豆瓣链接','封面','上映日期','导演','编剧',\
+        self.itemKeys=['subjectId','电影名','年份','豆瓣链接','封面','上映日期','导演','编剧',\
             '主演','制片国家/地区','片长','豆瓣评分','评分人数','标记日期','IMDb链接',\
-            '语言','又名','类型']
+            '语言','又名','类型','短评们']
         self.sawKeys = self.itemKeys + ['用户标签','用户评分','短评']
         #saw dict format: {movieid:[电影名,上映日期,导演,编剧,主演,制片国家/地区,片长,评分,评分人数,用户评分,评论,标记日期,豆瓣链接]}
         self.saw_dict={}
+        self.proxies = {
+            'https': "http://95.179.219.61:8080",
+            'http': "http://61.7.138.240:8080"
+        }
     
     def get_soup(self,url):
         req = self.s.get(url)
@@ -57,7 +59,7 @@ class Douban_Movie:
 
         # 添加新特性，可以根据上次爬取历史中断重复爬取
         ## 要求上次爬取文件在当前脚本目录中
-        lastMid = self.getLastBackUpItem(Type='想看')
+        lastMid = getLastBackUpItem(self.id,'想看')
 
         # get movie name and id
         if (self.wish_store(soup.find_all(class_=['item']), lastMid) == -1):
@@ -92,13 +94,13 @@ class Douban_Movie:
             count+=1
             if count%50==0:
                 sleep(15)
-            sleep(uniform(1,2.5))
+            sleep(uniform(1,2))
             timebar(30,st,count/total)
             fail.append(self.get_feature(mid,dic))
         print('\n再次尝试打开失败的电影页')
         for fmid in fail:
             if fmid!=None:
-                sleep(2)
+                sleep(1.5)
                 print()
                 self.get_feature(fmid,dic)
 
@@ -123,6 +125,14 @@ class Douban_Movie:
                     dic[mid]['评分人数']=soup2.find(class_="rating_people").span.text
                 except:
                     dic[mid]['评分人数']='0'
+                try:
+                    dic[mid]['年份']=getYear(dic[mid]['上映日期'])
+                except:
+                    try:
+                        dic[mid]['年份']=getYear(dic[mid]['首播'])
+                    except:
+                        dic[mid]['年份']='...'
+                dic[mid]['短评们']=getShortComments(soup2.findAll(class_="comment"))
         except:
             print('\r打开电影页失败，失败的电影链接：'+subject_head+mid)
             self.switch_header()
@@ -167,7 +177,7 @@ class Douban_Movie:
         
         # 添加新特性，可以根据上次爬取历史中断重复爬取
         ## 要求上次爬取文件在当前脚本目录中
-        lastMid = self.getLastBackUpItem(Type='看过')
+        lastMid = getLastBackUpItem(self.id,'看过')
 
         #get movie name and id
         if (self.saw_store(soup.find_all(class_=['item']), lastMid) == -1):
@@ -197,10 +207,11 @@ class Douban_Movie:
         with open(fn(self.id+'-'+getFormatTime()+Type+'plus.csv'),\
             'a',encoding='utf-8_sig') as f:
             fieldNames = self.sawKeys if Type == '看过' else self.itemKeys
-            writer = csv.DictWriter(f, fieldnames=fieldNames, restval="restval", extrasaction='ignore')
+            writer = csv.DictWriter(f, fieldnames=fieldNames, restval="...", extrasaction='ignore')
             writer.writeheader()
             for mid in dic.keys():
                 writer.writerow(dic[mid])
+        dic = {}
     
     def save_as_csv(self,choice):
         if choice in ['a','c']:
@@ -214,36 +225,9 @@ class Douban_Movie:
         headers0['User-Agent']=choice(user_agent_list)
         self.s.headers.update(headers0)
 
-    def getLastBackUpItem(self,Type="想看"):
-        # 获取上次文件
-        matchFiles = []
-        # 文件名
-        fnMatch = r"iiid-\d{4}-\d{2}-\d{2} \d{2}-\d{2}-\d{2}tttypeplus.csv"\
-            .replace('iiid',self.id).replace('tttype',Type)
-        for _, _, files in os.walk("."):
-            for file in files:
-                # print(file)
-                if re.match(fnMatch,file):
-                    matchFiles.append(file)
-        ## 得到最新的电影名
-        if len(matchFiles) != 0:
-            latest = reduce(lambda x,y: x if self.fileTimeCompare(x,y) else y,\
-                matchFiles)
-            with open(latest, 'r', encoding='utf-8_sig') as f:
-                reader = csv.DictReader(f)
-                # 获取第一行电影的id
-                try:
-                    row = reader.__next__()
-                    return row['subjectId']
-                except:
-                    return None
-        else: 
-            return None 
-    
-    def fileTimeCompare(self, fn1, fn2):
-        fn1 = fn1.replace(".csv","").split('-',1)[1][:-6]
-        fn2 = fn2.replace(".csv","").split('-',1)[1][:-6]
-        return string2Time(fn1) > string2Time(fn2) 
+    def add_cookies(self,raw_cookies):
+        cookies=getCookie(raw_cookies)
+        self.s.cookies.update(cookies)
 
 def movieMain():
     print('嘿，据说你想要备份你的豆瓣电影记录？')
@@ -256,11 +240,15 @@ def movieMain():
     if ans1=='yes':
         Douid=input('请输入你的豆瓣id： ')
         clawer=Douban_Movie(doubanid=Douid)
+        # 想要加cookies
+        if (input('想要添加cookies(爬取豆瓣隐藏条目)可以添加cookie,输入c: ').lower()=='c'):
+            raw_cookies = input("请输入cookies: ")
+            clawer.add_cookies(raw_cookies)
         print('''
-以下为选项
-    A：想看列表
-    B：看过列表
-    C：想看+看过''')
+    以下为选项
+        A：想看列表
+        B：看过列表
+        C：想看+看过''')
         ans2=input('请输入你需要爬取的内容：')
         ans2=ans2.lower()
         if ans2=='a':
