@@ -1,7 +1,12 @@
 *.spec
 *.zip
 *.exe
+*.csv
+*.pyc
+.DS_Store
 
 build/
+venv/**/
 __pycache__/
 dist/
+

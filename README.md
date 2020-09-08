@@ -21,6 +21,20 @@
 * DouBan Dou-List back-up
 
 
+## Install
+
+- 安装python、pip
+- 切换项目目录
+
+```shell
+cd {project_path}/douban_crawler
+pip install virtualenv
+virtualenv venv
+source venv/bin/activate
+pip install -r requirements.txt
+python personalCrawler.py
+
+```
 
 ## About
 
