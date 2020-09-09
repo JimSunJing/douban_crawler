@@ -61,7 +61,7 @@ class Douban_List:
                             link=item.find(class_='pic-wrap').img.get('src')
                             title='one_pic'
                 print(title)
-                if 'subject' in link:
+                if 'subject' in link and 'discussion' not in link:
                     picList = item.find(class_='post').img.get('src').split('.')[:-1]
                     picList.append('jpg')
                     picUrl = '.'.join(picList)
