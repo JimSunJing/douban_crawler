@@ -36,6 +36,15 @@ python personalCrawler.py
 
 ```
 
+## Application
+
+### [DouBan Run Away Plan](https://www.notion.so/jimsun6428/for-Share-26945cf67a2a407cb9f381109dd438a1)
+use `personalCrawler.py` backup douban book+movie marking and import csv into Notion.
+
+### Book, Movie, Music [Planing System](https://www.notion.so/jimsun6428/for-Share-9248be8af2144960858de9cb9a3e75c2) base on Douban & Notion
+use `doulist.py` download doulist, import into notion calender template create a planing system.
+
+
 ## About
 
 * 这个小小的项目结束~~
