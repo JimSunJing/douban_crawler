@@ -32,7 +32,7 @@ def nextPageLink(sess,soup,page,head=""):
 def fn(name):
     return name.replace('\\','-').replace('/','-')\
         .replace(':','-').replace('*','-').replace('"','“')\
-        .replace('<','《').replace('>','》').replace('|','-').replace('?','？')
+        .replace('<','《').replace('>','》').replace('|','-').replace('?','？').replace('\n','')
 
 # page control
 def pageControl(limit=50):
